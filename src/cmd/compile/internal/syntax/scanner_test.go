@@ -256,6 +256,7 @@ var sampleTokens = [...]struct {
 	{_Else, "else", 0, 0},
 	{_Fallthrough, "fallthrough", 0, 0},
 	{_For, "for", 0, 0},
+	{_While, "while", 0, 0},
 	{_Func, "func", 0, 0},
 	{_Go, "go", 0, 0},
 	{_Goto, "goto", 0, 0},

@@ -275,6 +275,7 @@ const stopset uint64 = 1<<_Break |
 	1<<_Defer |
 	1<<_Fallthrough |
 	1<<_For |
+	1<<_While |
 	1<<_Go |
 	1<<_Goto |
 	1<<_If |
@@ -1800,12 +1801,29 @@ func (p *parser) forStmt() Stmt {
 	return s
 }
 
+func (p *parser) whileStmt() Stmt {
+	if trace {
+		defer p.trace("whileStmt")()
+	}
+
+	s := new(ForStmt)
+	s.pos = p.pos()
+
+	s.Init, s.Cond, s.Post = p.header(_While)
+	s.Body = p.blockStmt("while clause")
+
+	return s
+}
+
 func (p *parser) header(keyword token) (init SimpleStmt, cond Expr, post SimpleStmt) {
 	p.want(keyword)
 
 	if p.tok == _Lbrace {
 		if keyword == _If {
 			p.syntaxError("missing condition in if statement")
+		}
+		if keyword == _While {
+			p.syntaxError("missing condition in while statement")
 		}
 		return
 	}
@@ -1856,6 +1874,20 @@ func (p *parser) header(keyword token) (init SimpleStmt, cond Expr, post SimpleS
 					p.syntaxErrorAt(a.Pos(), "cannot declare in post statement of for loop")
 				}
 			}
+		} else if keyword == _While {
+			if p.tok == _Lbrace {
+				p.syntaxError("expecting while loop condition")
+				goto done
+			}
+			condStmt = p.simpleStmt(nil, 0 /* range not permitted */)
+			p.want(_Semi)
+			if p.tok != _Lbrace {
+				post = p.simpleStmt(nil, 0 /* range not permitted */)
+				if a, _ := post.(*AssignStmt); a != nil && a.Op == Def {
+					p.syntaxErrorAt(a.Pos(), "cannot declare in post statement of while loop")
+				}
+			}
+
 		} else if p.tok != _Lbrace {
 			condStmt = p.simpleStmt(nil, keyword)
 		}
@@ -2035,7 +2067,7 @@ func (p *parser) commClause() *CommClause {
 // Statement =
 // 	Declaration | LabeledStmt | SimpleStmt |
 // 	GoStmt | ReturnStmt | BreakStmt | ContinueStmt | GotoStmt |
-// 	FallthroughStmt | Block | IfStmt | SwitchStmt | SelectStmt | ForStmt |
+// 	FallthroughStmt | Block | IfStmt | SwitchStmt | SelectStmt | ForStmt | WhileStmt |
 // 	DeferStmt .
 func (p *parser) stmtOrNil() Stmt {
 	if trace {
@@ -2078,6 +2110,9 @@ func (p *parser) stmtOrNil() Stmt {
 
 	case _For:
 		return p.forStmt()
+
+	case _While:
+		return p.whileStmt()
 
 	case _Switch:
 		return p.switchStmt()
