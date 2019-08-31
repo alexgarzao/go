@@ -54,6 +54,7 @@ const (
 	_Func        // func
 	_Go          // go
 	_Goto        // goto
+	_Let         // let
 	_If          // if
 	_Import      // import
 	_Interface   // interface

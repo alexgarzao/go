@@ -1951,6 +1951,68 @@ func (p *parser) ifStmt() *IfStmt {
 	return s
 }
 
+// let <id> = <SimpleStmt> if <Cond>  else <SimpleStmt>
+// let y    = 1            if x <= 5  else 2
+func (p *parser) letStmt() *IfStmt {
+	if trace {
+		defer p.trace("letStmt")()
+	}
+
+	s := new(IfStmt)
+	s.pos = p.pos()
+
+	// let
+	p.want(_Let)
+
+	// <id>
+	id := p.expr()
+
+	// =
+	if p.tok != _Assign {
+		p.syntaxError("expected = in let block")
+	}
+
+	pos := p.pos()
+	op := p.op
+	p.next()
+
+	// <SimpleStmt>
+	thenStmt := p.newAssignStmt(pos, op, id, p.expr())
+
+	bs := new(BlockStmt)
+	bs.pos = pos // p.pos()
+	bs.List = append(bs.List, thenStmt)
+
+	s.Then = bs
+
+	// if
+	p.want(_If)
+
+	// <Cond>
+	condStmt := p.simpleStmt(nil, 0)
+
+	switch exprStmt := condStmt.(type) {
+	case nil:
+		p.syntaxErrorAt(s.pos, fmt.Sprintf("unexpected!!!"))
+	case *ExprStmt:
+		s.Cond = exprStmt.X
+	}
+
+	// else
+	p.want(_Else)
+
+	// <SimpleStmt>
+	elseStmt := p.newAssignStmt(pos, op, id, p.expr())
+
+	bs = new(BlockStmt)
+	bs.pos = pos // p.pos()
+	bs.List = append(bs.List, elseStmt)
+
+	s.Else = bs
+
+	return s
+}
+
 func (p *parser) switchStmt() *SwitchStmt {
 	if trace {
 		defer p.trace("switchStmt")()
@@ -2122,6 +2184,9 @@ func (p *parser) stmtOrNil() Stmt {
 
 	case _If:
 		return p.ifStmt()
+
+	case _Let:
+		return p.letStmt()
 
 	case _Fallthrough:
 		s := new(BranchStmt)
