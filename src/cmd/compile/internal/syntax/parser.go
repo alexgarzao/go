@@ -2129,7 +2129,7 @@ func (p *parser) commClause() *CommClause {
 // Statement =
 // 	Declaration | LabeledStmt | SimpleStmt |
 // 	GoStmt | ReturnStmt | BreakStmt | ContinueStmt | GotoStmt |
-// 	FallthroughStmt | Block | IfStmt | SwitchStmt | SelectStmt | ForStmt | WhileStmt |
+// 	FallthroughStmt | Block | IfStmt | LetStmt | SwitchStmt | SelectStmt | ForStmt | WhileStmt |
 // 	DeferStmt .
 func (p *parser) stmtOrNil() Stmt {
 	if trace {
